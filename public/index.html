@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Leaflet Web Map</title>
+        <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+        <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link rel="stylesheet" href="stylesheet.css" type="text/css">
+        <script src="./scripts/angularjs_1_4_3.js"></script>
+        <script src="./scripts/controller.js"></script>
+        <script src="./scripts/leaflet-heat.js"></script>
+       
+
+        <style>
+            #map {
+            width: 1200px;
+            height:600px;
+            float:left;
+            }
+        </style>
+
+    </head>
+
+    <body>
+
+        <div id="map"></div>
+
+        <script>
+
+            var baseLayer = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+            });
+
+            var map = L.map('map', {
+                center: [48.7447271, 19.1198277],
+                zoom: 8,
+                layers: [baseLayer]
+            });
+
+            var num;
+            var posuv;
+            var city;
+            var rozloha;
+            var rozlohaObj;
+        </script>
+        <br/>
+        <div style="float: left ;margin: 0px 10px 0px 10px" ng-app="app" ng-controller="httpFormController">
+            <!-- <p>DATA: <br>
+            {{posuv}}, {{rozlohaObj.value}}, {{rozloha}}
+            </p> -->
+            <input ng-click="addCycle()" value="Add" class="button" type="button" style="margin: 0px 5px 0px 5px"><br>
+            <input ng-click="searchAll()" value="Najdi vsetky luky" class="button" type="button" style="margin: 0px 5px 0px 5px"><br>
+           
+            <br/>
+            <input type="checkbox" name="Rozloha" value="rozloha" ng-model="rozloha">Rozloha taboriska <br/>
+            <div ng-if="rozloha">
+                <span style="float:left; margin: 0px 5px 0px 5px"><p>1 m<sup>2</sup></p></span>
+                <span style="float:left; margin: 0px 5px 0px 5px"><input type="range" name="roz" min="1" max="150" style="width: 150px" ng-model="rozlohaObj.value"></span>
+                <span style="float:left; margin: 0px 5px 0px 5px"><p>150 m<sup>2</sup></p></span>
+                <span style="float:left; margin: 0px 5px 0px 5px"><textarea rows="1" cols="3" wrap="hard" readonly style="resize:none">{{rozlohaObj.value}}</textarea></span>
+                <br/><hr/>
+            </div>
+
+            <br/>
+            <form ng-submit="filter()">
+                <div  ng-repeat="(id, x) in posuv">
+                    <input name="name" type="text" id="email" placeholder="city/place" style="margin: 0px 5px 0px 5px" ng-model="x.city"/><br /><br>
+                    <div>
+                        <p>Do</p>
+                        <span style="float:left; margin: 0px 5px 0px 5px"><p>1km</p></span>
+                        <span style="float:left; margin: 0px 5px 0px 5px"><input type="range" name="points" min="1" max="50" style="width: 150px" ng-model="x.value"></span>
+                        <span style="float:left; margin: 0px 5px 0px 5px"><p>50km</p></span>
+                        <span style="float:left; margin: 0px 5px 0px 5px"><textarea rows="1" cols="3" wrap="hard" readonly style="resize:none">{{x.value}}</textarea></span>
+                        <br/><br/><P>Od</P>
+                        <span style="float:left; margin: 0px 5px 0px 5px"><p>1km</p></span>
+                        <span style="float:left; margin: 0px 5px 0px 5px"><input type="range" name="points" min="1" max="50" style="width: 150px" ng-model="x.from"></span>
+                        <span style="float:left; margin: 0px 5px 0px 5px"><p>50km</p></span>
+                        <span style="float:left; margin: 0px 5px 0px 5px"><textarea rows="1" cols="3" wrap="hard" readonly style="resize:none">{{x.from}}</textarea></span>
+                        <input ng-click="removeElem(id)" value="X" class="button" type="button" style=" float:left; margin: 0px 5px 0px 5px">
+                    </div>
+                   
+                    <br/>
+                    <hr/>
+                    
+                </div>
+                
+                <input type="submit" id="submit" style="margin: 0px 5px 0px 5px">
+                <input ng-click="removeCycleButt()" value="Remove" class="button" type="button" style="margin: 0px 5px 0px 5px"><br>
+            
+            </form>
+            
+        </div>
+        
+
+        
+    </body>
+
+</html>

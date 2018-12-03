@@ -1,0 +1,19 @@
+{
+  "name": "pdtprojekt",
+  "version": "1.0.0",
+  "description": "school project",
+  "main": "projekt.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dan Pavlenko",
+  "license": "ISC",
+  "dependencies": {
+    "angular-mapboxgl-directive": "^0.46.0",
+    "leaflet": "^1.3.4",
+    "mapbox": "^1.0.0-beta10",
+    "mapbox-gl": "^0.51.0",
+    "node-pre-gyp": "^0.12.0",
+    "pg": "^7.6.1"
+  }
+}

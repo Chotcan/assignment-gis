@@ -26,5 +26,8 @@ Pripady pouzitia:
 
 **Technologies used**: 
 
-- Javascript
-- Python
+- Node JS
+- HTML
+- Angular JS
+- Postgresql
+- Postgis
