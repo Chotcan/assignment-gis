@@ -9,8 +9,8 @@ Táto aplikácia zobrazuje na mape všetky lúky vhodné na táborenie, ktoré s
 
 This is it in action:
 
-![Screenshot](screenshot.png)
-![Screenshot2](screenshot1.png)
+![Screenshot](screenshot3.png)
+![Screenshot2](screenshot4.png)
 
 Aplikácia pozostáva z [backendu](#backend), kde je vytvorená [Node.js API](#API) pomocou [Node.js](https://nodejs.org/en/) s prístupom do databáz PostgreSQL, kde sú uložené dáta z [Open Street Maps](https://www.openstreetmap.org/) a z [frontendu](#frontend), ktorý využíva [AngularJS](https://angularjs.org/) a HTML, ktoý slúži ako klient.
 
@@ -104,3 +104,39 @@ Odpoveď na API volanie obsahuje `success`, `data`, kde sú uložené polygóny,
 }
 ```
 
+## Dopyty na databázu
+Optimalizácia u všetkých dopytov prebehla pomocou indexov.
+
+**Prvý dopyt**
+
+Prvý dopit na databázu je využívaný na nájdenie všetkých lúk na slovensku s pomocou funkcie WITH, následne nájde všetky národné parky, ktorých stupeň ochrany je vyšší ako 2. Následne nájde všetky lúky, ktoré sa v týchto parkoch nenachádzajú použitím príkazu ST_Within a RIGHT JOIN-om a vytvorí centroid, ktorý použijeme v heat mape.
+```
+WITH mead AS(
+  SELECT st_transform(way, 4326) as dataquery FROM planet_osm_polygon as poly 
+  WHERE poly.landuse = 'meadow'
+), parks AS (
+  SELECT way FROM (SELECT  key, value::integer, ST_AsGeoJSON(st_transform(nationalparks.way, 4326)) as poly, st_transform(nationalparks.way, 4326) as way FROM 
+    (SELECT (each(tags)).key, (each(tags)).value, way FROM planet_osm_polygon as p WHERE p.boundary = 'national_park') AS nationalparks WHERE nationalparks.key LIKE 'protect_class') as vys WHERE value > 2
+        )
+        SELECT ST_AsGeoJSON(ST_Centroid(dataquery)) as dataquery2 FROM (SELECT mead.dataquery as mead2 FROM parks, mead WHERE ST_Within(mead.dataquery, parks.way)) as res RIGHT JOIN mead ON res.mead2 = mead.dataquery WHERE res.mead2 IS NULL
+```
+
+**Druhý dopyt**
+
+Najprv sa nájdu všetky lúky okolo daného mesta/dediny (v tomto prípade "Stropkov") vo vzdialenosti od 5000 do 10000 metrov, a vyberieme všetky, ktoré sa tam nachádzajú aspoň toľko krát koľko miest hľadáme -1 (v tomto prípade 0 pretoze je hľadané len mesto Stropkov => 1-1 = 0). Následne z týchto lúk vyberieme len lúky do ktorých stredu sa vojde štvorec s rozlohou 100 metrov štvorcových (štvorec nahradzuje tvar táboriska, rozloha je nastaviteľná u clienta). Ďalšiou WITH funkciou nájdeme všetky Národné parky, ktoré majú väčší stupeň ochrany ako 2 (teda je v nich zakázané táboriť). Na záver využijeme oba WITH funkcie na nájdenie vštkých lúk okolo daného miesta, ktoré sa nenachádzajú v daných narodných parkoch použitím ST_Within a RIGHT JOIN-om.
+```
+WITH mead AS( 
+SELECT ST_Contains(da.dataquery, ST_Buffer(ST_GeographyFromText(ST_AsText(ST_GeomFromGeoJSON(da.centroids))), 100, 1)::geometry) as contains, da.dataquery2, da.count, da.centroids, da.dataquery FROM (
+SELECT ST_AsGeoJSON(ST_Centroid(dataquery)) as centroids, ST_AsGeoJSON(dataquery) as dataquery2, dataquery,  count(*)  FROM (
+SELECT st_transform(meadows.way, 4326) as dataquery FROM
+(SELECT * FROM planet_osm_point AS point WHERE point.name LIKE 'Stropkov' AND point.place IN ('city', 'town', 'village')) AS city
+CROSS JOIN 
+(SELECT * FROM planet_osm_polygon As poly WHERE poly.landuse = 'meadow') AS meadows
+WHERE ST_DWithin(ST_SetSRID(city.way,4326), ST_SetSRID(meadows.way,4326), 10000) AND ST_DWithin(ST_SetSRID(city.way,4326), ST_SetSRID(meadows.way,4326), 5000) = false 
+) AS uni GROUP BY dataquery HAVING count(*) > 0 ) as da ), 
+parks AS (
+SELECT way FROM (SELECT  key, value::integer, ST_AsGeoJSON(st_transform(nationalparks.way, 4326)) as poly, st_transform(nationalparks.way, 4326) as way FROM 
+(SELECT (each(tags)).key, (each(tags)).value, way FROM planet_osm_polygon as p WHERE p.boundary = 'national_park') AS nationalparks WHERE nationalparks.key LIKE 'protect_class') as vys WHERE value > 2
+) 
+SELECT ST_AsGeoJSON(dataquery) as dataquery, mead.centroids , mead.contains FROM (SELECT mead.dataquery as mead2 FROM parks, mead WHERE ST_Within(mead.dataquery, parks.way)) as res RIGHT JOIN mead ON res.mead2 = mead.dataquery WHERE res.mead2 IS NULL
+```
